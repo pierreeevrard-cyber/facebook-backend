@@ -30,7 +30,7 @@ app.post("/publish", async (req, res) => {
       `https://graph.facebook.com/v24.0/${PAGE_ID}/feed`,
       {
         message,
-        access_token: PAGE_ACCESS_TOKEN,
+        access_token: EAAWW1PTyrjgBPZCM2HLHnYlTUoxE17908h1GZBpZBCkjxRZCItfWLA8vp2Y23waAQCntecV20g25hCcqLDIxNSgIZBRrlZA8p4otZB9mvIsatd6AqWb44o39LNp0LEK8ldZBPQB2tu5OSq33kAwkA2GkhTxlCZAxbZAzXvzXr5biBqM0XIoxRHD1ZBOYScR0ZCnHP5BJfq2GyYZCnDNiuZAyG9Dwa2MZBRxK3cRtLpqSZAorlmO3iZBNB,
       }
     );
 
