@@ -1,33 +1,56 @@
 import express from "express";
 import dotenv from "dotenv";
+import axios from "axios";
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// pour que ton API comprenne le JSON envoyé par n8n
 app.use(express.json());
 
-// Middleware pour vérifier la clé API
-app.use((req, res, next) => {
-  const apiKey = req.headers["x-api-key"];
-  if (!apiKey || apiKey !== process.env.API_KEY) {
-    return res.status(401).json({ error: "❌ Accès refusé : clé API invalide" });
+// === CONFIGURATION FACEBOOK ===
+const PAGE_ID = "822734930930653"; // Ton Page ID
+const PAGE_ACCESS_TOKEN = "EAAWW1PTyrjgBP9VEDvwm34jWN7UXQlPUWBgkmcE20qcqkl8k1j1B7XuAZBoWsZACLZAzTerb79pATOC8u7D1F7mPEZAGW9GoElNkNNDNP5VoPZBGNa19g6ZAglME3vjgwxm9Q38XqMZAecGTTZApVmZA2Utk7fBmO9mCzSIA27ZCr6tBHYo62BgGEcZCFDLeklKtKlYJdtvoBI5Ar5XxgdEvfoJOtF6Q9PMKQ2R5SRUnQCFiewkHZA0ZAYY7BFwU2c0ZBfMwdrXmbwlSEaZC7uV4N8ZD";
+
+// === ROUTE TEST ===
+app.get("/", (req, res) => {
+  res.send("✅ Serveur ImmoPoster prêt à publier sur Facebook !");
+});
+
+// === ROUTE POUR RECEVOIR LES DONNÉES DE N8N ===
+app.post("/publish", async (req, res) => {
+  try {
+    const { message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: "Le champ 'message' est requis." });
+    }
+
+    // Requête vers l'API Graph Facebook
+    const response = await axios.post(
+      `https://graph.facebook.com/v24.0/${PAGE_ID}/feed`,
+      {
+        message,
+        access_token: PAGE_ACCESS_TOKEN,
+      }
+    );
+
+    console.log("✅ Publication réussie :", response.data);
+
+    res.status(200).json({
+      success: true,
+      facebook_response: response.data,
+    });
+  } catch (error) {
+    console.error("❌ Erreur lors de la publication :", error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      error: error.response?.data || error.message,
+    });
   }
-  next();
 });
 
-// Route test pour vérifier que tout marche
-app.post("/api/test", (req, res) => {
-  console.log("Requête reçue :", req.body);
-  res.json({
-    message: "✅ Données reçues avec succès !",
-    data: req.body,
-  });
-});
-
-// Lancer le serveur
+// === LANCER LE SERVEUR ===
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Serveur démarré sur le port ${PORT}`);
+  console.log(`🚀 Serveur démarré sur le port ${PORT}`);
 });
