@@ -30,21 +30,30 @@ app.post("/publish", async (req, res) => {
       return res.status(400).json({ error: "Le champ 'message' est requis." });
     }
 
-    // Utilise les valeurs du client si fournies, sinon celles par défaut (sécurité)
-    const PAGE_ID = page_id || "822734930930653";
-    const TOKEN = access_token || "EAAWW1PTyrjgBP3QmUezAmucW6tm1GuLZBZCuDz0eaueSAC6SilkcyizpdyUK3qsDlTQ5CKhZBdyPEoZCEL2Xl6olg6qleJNPNOs5sjIV73TpKkc97M8cK7zS6VRSk1qfXzLqQE9SZB7V3vJOTwQOjLuEL18XZCziKVdH15GwSzLu82ZAv79HCoN9qtPAQ7WcgcBBsJbuYXZA4lbLXnoRTGVYcGCxPu2BSrrn6ZAt4THJe";
+    // ✅ Si aucun token/page_id n'est fourni, on prend ceux des variables Render
+    const PAGE_ID = page_id || process.env.PAGE_ID;
+    const TOKEN = access_token || process.env.PAGE_ACCESS_TOKEN;
 
     let response;
 
     if (image_url) {
+      // 🖼️ Publication avec image
       response = await axios.post(
         `https://graph.facebook.com/v19.0/${PAGE_ID}/photos`,
-        { url: image_url, caption: message, access_token: TOKEN }
+        {
+          url: image_url,
+          caption: message,
+          access_token: TOKEN,
+        }
       );
     } else {
+      // 💬 Publication texte seule
       response = await axios.post(
         `https://graph.facebook.com/v19.0/${PAGE_ID}/feed`,
-        { message, access_token: TOKEN }
+        {
+          message,
+          access_token: TOKEN,
+        }
       );
     }
 
@@ -52,7 +61,9 @@ app.post("/publish", async (req, res) => {
     res.status(200).json({ success: true, facebook_response: response.data });
   } catch (error) {
     console.error("❌ Erreur :", error.response?.data || error.message);
-    res.status(500).json({ success: false, error: error.response?.data || error.message });
+    res
+      .status(500)
+      .json({ success: false, error: error.response?.data || error.message });
   }
 });
 
