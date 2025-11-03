@@ -27,43 +27,56 @@ app.post("/publish", async (req, res) => {
     const { message, image_url, page_id, access_token } = req.body;
 
     if (!message) {
-      return res.status(400).json({ error: "Le champ 'message' est requis." });
+      return res.status(400).json({ error: "❌ Le champ 'message' est requis." });
     }
 
-    // ✅ Si aucun token/page_id n'est fourni, on prend ceux des variables Render
+    // ✅ Si pas fourni dans le body, on prend les valeurs par défaut de Render (.env)
     const PAGE_ID = page_id || process.env.PAGE_ID;
     const TOKEN = access_token || process.env.PAGE_ACCESS_TOKEN;
 
-    let response;
+    let postData = {};
+    let endpoint = "";
 
+    // 🧩 Si une image est fournie
     if (image_url) {
-      // 🖼️ Publication avec image
-      response = await axios.post(
-        `https://graph.facebook.com/v19.0/${PAGE_ID}/photos`,
-        {
-          url: image_url,
-          caption: message,
-          access_token: TOKEN,
+      // Si l’image vient de Google Drive → on la convertit en lien direct
+      let finalUrl = image_url;
+      if (image_url.includes("drive.google.com")) {
+        const match = image_url.match(/[-\w]{25,}/);
+        if (match) {
+          const fileId = match[0];
+          finalUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
         }
-      );
+      }
+
+      endpoint = `https://graph.facebook.com/v19.0/${PAGE_ID}/photos`;
+      postData = {
+        url: finalUrl,
+        caption: message,
+        access_token: TOKEN,
+      };
     } else {
-      // 💬 Publication texte seule
-      response = await axios.post(
-        `https://graph.facebook.com/v19.0/${PAGE_ID}/feed`,
-        {
-          message,
-          access_token: TOKEN,
-        }
-      );
+      // 💬 Sinon, publication texte simple
+      endpoint = `https://graph.facebook.com/v19.0/${PAGE_ID}/feed`;
+      postData = {
+        message,
+        access_token: TOKEN,
+      };
     }
 
+    const response = await axios.post(endpoint, postData);
+
     console.log("✅ Publication réussie :", response.data);
-    res.status(200).json({ success: true, facebook_response: response.data });
+    res.status(200).json({
+      success: true,
+      facebook_response: response.data,
+    });
   } catch (error) {
     console.error("❌ Erreur :", error.response?.data || error.message);
-    res
-      .status(500)
-      .json({ success: false, error: error.response?.data || error.message });
+    res.status(500).json({
+      success: false,
+      error: error.response?.data || error.message,
+    });
   }
 });
 
