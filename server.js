@@ -7,13 +7,9 @@ dotenv.config();
 const app = express();
 app.use(express.json({ limit: "25mb" }));
 
-// === CONFIGURATION FACEBOOK ===
-const PAGE_ID = "822734930930653"; // ID de ta page
-const PAGE_ACCESS_TOKEN = "EAAWW1PTyrjgBP3QmUezAmucW6tm1GuLZBZCuDz0eaueSAC6SilkcyizpdyUK3qsDlTQ5CKhZBdyPEoZCEL2Xl6olg6qleJNPNOs5sjIV73TpKkc97M8cK7zS6VRSk1qfXzLqQE9SZB7V3vJOTwQOjLuEL18XZCziKVdH15GwSzLu82ZAv79HCoN9qtPAQ7WcgcBBsJbuYXZA4lbLXnoRTGVYcGCxPu2BSrrn6ZAt4THJe";
-
 // === ROUTE TEST ===
 app.get("/", (req, res) => {
-  res.send("✅ ImmoPoster backend est en ligne et prêt à publier !");
+  res.send("✅ ImmoPoster backend multi-client en ligne !");
 });
 
 // === 🔐 MIDDLEWARE DE SÉCURITÉ ===
@@ -25,60 +21,43 @@ app.use((req, res, next) => {
   next();
 });
 
-// === ROUTE POUR LES PUBLICATIONS ===
+// === ROUTE /publish ===
 app.post("/publish", async (req, res) => {
   try {
-    const { message, image_url } = req.body;
+    const { message, image_url, page_id, access_token } = req.body;
 
     if (!message) {
-      return res.status(400).json({
-        error: "❌ Le champ 'message' est requis.",
-      });
+      return res.status(400).json({ error: "Le champ 'message' est requis." });
     }
+
+    // Utilise les valeurs du client si fournies, sinon celles par défaut (sécurité)
+    const PAGE_ID = page_id || "822734930930653";
+    const TOKEN = access_token || "EAAWW1PTyrjgBP3QmUezAmucW6tm1GuLZBZCuDz0eaueSAC6SilkcyizpdyUK3qsDlTQ5CKhZBdyPEoZCEL2Xl6olg6qleJNPNOs5sjIV73TpKkc97M8cK7zS6VRSk1qfXzLqQE9SZB7V3vJOTwQOjLuEL18XZCziKVdH15GwSzLu82ZAv79HCoN9qtPAQ7WcgcBBsJbuYXZA4lbLXnoRTGVYcGCxPu2BSrrn6ZAt4THJe";
 
     let response;
 
     if (image_url) {
-      // 🖼️ Publication avec une image
-      console.log("🖼️ Publication avec image :", image_url);
       response = await axios.post(
         `https://graph.facebook.com/v19.0/${PAGE_ID}/photos`,
-        {
-          url: image_url,
-          caption: message,
-          access_token: PAGE_ACCESS_TOKEN,
-        }
+        { url: image_url, caption: message, access_token: TOKEN }
       );
     } else {
-      // 💬 Publication texte seule
-      console.log("💬 Publication texte seule :", message);
       response = await axios.post(
         `https://graph.facebook.com/v19.0/${PAGE_ID}/feed`,
-        {
-          message,
-          access_token: PAGE_ACCESS_TOKEN,
-        }
+        { message, access_token: TOKEN }
       );
     }
 
     console.log("✅ Publication réussie :", response.data);
-
-    res.status(200).json({
-      success: true,
-      facebook_response: response.data,
-    });
+    res.status(200).json({ success: true, facebook_response: response.data });
   } catch (error) {
-    console.error("❌ Erreur lors de la publication :", error.response?.data || error.message);
-
-    res.status(500).json({
-      success: false,
-      error: error.response?.data || error.message,
-    });
+    console.error("❌ Erreur :", error.response?.data || error.message);
+    res.status(500).json({ success: false, error: error.response?.data || error.message });
   }
 });
 
-// === LANCER LE SERVEUR ===
+// === LANCEMENT DU SERVEUR ===
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Serveur ImmoPoster en ligne sur le port ${PORT}`);
+  console.log(`🚀 ImmoPoster multi-client prêt sur le port ${PORT}`);
 });
