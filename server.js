@@ -16,6 +16,15 @@ app.get("/", (req, res) => {
   res.send("✅ ImmoPoster backend est en ligne et prêt à publier !");
 });
 
+// === 🔐 MIDDLEWARE DE SÉCURITÉ ===
+app.use((req, res, next) => {
+  const apiKey = req.headers["x-api-key"];
+  if (!apiKey || apiKey !== process.env.API_KEY) {
+    return res.status(401).json({ error: "❌ Accès refusé : clé API invalide" });
+  }
+  next();
+});
+
 // === ROUTE POUR LES PUBLICATIONS ===
 app.post("/publish", async (req, res) => {
   try {
