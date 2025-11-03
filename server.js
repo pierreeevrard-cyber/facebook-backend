@@ -9,7 +9,7 @@ app.use(express.json({ limit: "25mb" }));
 
 // === ROUTE TEST ===
 app.get("/", (req, res) => {
-  res.send("✅ ImmoPoster backend multi-client en ligne !");
+  res.send("✅ ImmoPoster backend multi-client (sans compte par défaut) en ligne !");
 });
 
 // === 🔐 MIDDLEWARE DE SÉCURITÉ ===
@@ -26,62 +26,49 @@ app.post("/publish", async (req, res) => {
   try {
     const { message, image_url, page_id, access_token } = req.body;
 
+    // 🧩 Vérification obligatoire
     if (!message) {
       return res.status(400).json({ error: "❌ Le champ 'message' est requis." });
     }
-
-    // ✅ Si pas fourni dans le body, on prend les valeurs par défaut de Render (.env)
-    const PAGE_ID = page_id || process.env.PAGE_ID;
-    const TOKEN = access_token || process.env.PAGE_ACCESS_TOKEN;
-
-    let postData = {};
-    let endpoint = "";
-
-    // 🧩 Si une image est fournie
-    if (image_url) {
-      // Si l’image vient de Google Drive → on la convertit en lien direct
-      let finalUrl = image_url;
-      if (image_url.includes("drive.google.com")) {
-        const match = image_url.match(/[-\w]{25,}/);
-        if (match) {
-          const fileId = match[0];
-          finalUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
-        }
-      }
-
-      endpoint = `https://graph.facebook.com/v19.0/${PAGE_ID}/photos`;
-      postData = {
-        url: finalUrl,
-        caption: message,
-        access_token: TOKEN,
-      };
-    } else {
-      // 💬 Sinon, publication texte simple
-      endpoint = `https://graph.facebook.com/v19.0/${PAGE_ID}/feed`;
-      postData = {
-        message,
-        access_token: TOKEN,
-      };
+    if (!page_id || !access_token) {
+      return res.status(400).json({
+        error: "❌ Les champs 'page_id' et 'access_token' sont obligatoires pour publier.",
+      });
     }
 
-    const response = await axios.post(endpoint, postData);
+    let response;
+
+    if (image_url) {
+      console.log("🖼️ Publication avec image :", image_url);
+      response = await axios.post(
+        `https://graph.facebook.com/v19.0/${page_id}/photos`,
+        {
+          url: image_url,
+          caption: message,
+          access_token,
+        }
+      );
+    } else {
+      console.log("💬 Publication texte seule :", message);
+      response = await axios.post(
+        `https://graph.facebook.com/v19.0/${page_id}/feed`,
+        {
+          message,
+          access_token,
+        }
+      );
+    }
 
     console.log("✅ Publication réussie :", response.data);
-    res.status(200).json({
-      success: true,
-      facebook_response: response.data,
-    });
+    res.status(200).json({ success: true, facebook_response: response.data });
   } catch (error) {
     console.error("❌ Erreur :", error.response?.data || error.message);
-    res.status(500).json({
-      success: false,
-      error: error.response?.data || error.message,
-    });
+    res.status(500).json({ success: false, error: error.response?.data || error.message });
   }
 });
 
 // === LANCEMENT DU SERVEUR ===
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 ImmoPoster multi-client prêt sur le port ${PORT}`);
+  console.log(`🚀 ImmoPoster multi-client sans compte par défaut prêt sur le port ${PORT}`);
 });
